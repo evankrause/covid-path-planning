@@ -6,6 +6,7 @@ from polygon_extraction import extract_polygon
 from lp_solver import solve_full_lp, visualize_times
 import math
 from tsp import tsp
+from dhwani import *
 
 ######################
 ###   Parameters   ###
@@ -72,42 +73,32 @@ pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
 print('Visualizing solution')
 visualize_times(room, waiting_times)
 
-# all the following code is extra...
+# all the following code is new
+# READING THE CSV.
+# coords contains the (x,y) co-ordinates of the points in the room.
+# We need to go to each and every point in the coords list.
 
-# READING THE CSV
 coords_pdf = pd.read_csv(OUTPUT_CSV)
 coords = []
 for i, row in coords_pdf.iterrows():
     x = row['x']
     y = row['y']
     coords.append((x, y))
+
+l = len(coords)
+
+tour = nearest_neighbor(0, coords, l)
+print(tour)
+
+for i in range(5):
+    tour = two_opt(tour, coords, l)
+    print(cost(tour, coords))
+
+print(tour)
+
+dists, angles = distance_angles(tour, coords, l)
+angles += [0]
 #
-# #print(coords)
-#
-# # Getting the minimum distance
-# min_dist, itinerary = tsp(coords)
-# print(min_dist)
-# print(itinerary)
-
-itinerary = [0, 4, 3, 2, 7, 8, 9, 11, 12, 15, 22, 26, 25, 24, 27, 32, 33, 37, 40, 48, 44, 41, 36, 38, 42, 45, 46, 47, 43, 39, 35, 34, 31, 30, 29, 28, 23, 20, 21, 19, 18, 17, 16, 13, 14, 10, 6, 5, 1]
-
-# Getting distances between consecutive stops
-dists = []
-angles = []
-for i in range(len(itinerary)):
-    src = coords[itinerary[i]]
-    mod = (i+1) % len(itinerary)
-    dest = coords[itinerary[mod]]
-    d = math.sqrt((dest[0] - src[0])**2 + (dest[1]-src[1])**2)
-    dists.append(d)
-
-    angle = math.atan2(dest[1]-src[1], dest[0]-src[0])
-    angles.append(angle)
-
-print(dists)
-print(sum(dists))
-print(angles)
-
 coords_pdf['orient'] = angles
 coords_pdf.to_csv(OUTPUT_CSV)
-
+#
