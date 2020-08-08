@@ -70,7 +70,7 @@ for (x, y), t in zip(room.guard_grid, waiting_times):
     # We drop points that you stop less than a milisecond. HARDCODED
     if t > 1e-3:
         rows.append({'x': x, 'y': y, 'time': t})
-pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
+
 
 # Graphical visualizations of the solution
 print('Visualizing solution')
@@ -81,7 +81,7 @@ visualize_times(room, waiting_times)
 # coords contains the (x,y) co-ordinates of the points in the room.
 # We need to go to each and every point in the coords list.
 
-coords_pdf = pd.read_csv(OUTPUT_CSV)
+
 coords = []
 for i, row in coords_pdf.iterrows():
     x = row['x']
