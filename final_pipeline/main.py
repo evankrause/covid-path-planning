@@ -32,9 +32,10 @@ MIN_INTENSITY = 1       # Threshold of energy each point in the room must
                         #   1/distance_in_pixels^2 units of energy
 
 # Algorithm parameters. See documentation for the different variations
-use_strong_visibility = False
-use_strong_distances = False
-scaling_method = 'epsilon' # must be in {'epsilon', 'branch_and_bound', 'none'}
+naive_solution = False
+use_strong_visibility = True
+use_strong_distances = True
+scaling_method = 'none' # must be in {'epsilon', 'branch_and_bound', 'none'}
 
 
 ############################
@@ -55,53 +56,56 @@ polygon = extract_polygon(INPUT_FILE, OUTPUT_FILE)
 print('Creating room')
 room = Room(polygon, units_per_pixel, robot_buffer_pixels = robot_buffer_pixels, room_eps = EPSILON, guard_eps = EPSILON)
 
-# Step 3: we generate the LP problem and solve it.
-print('Solving lp')
-time, waiting_times, intensities = solve_full_lp(room, robot_height_pixels, use_strong_visibility, use_strong_distances, scaling_method, MIN_INTENSITY)
+if naive_solution:
+    solve_naive(room, robot_height_pixels, MIN_INTENSITY)
+else:
+    # Step 3: we generate the LP problem and solve it.
+    print('Solving lp')
+    time, waiting_times, intensities = solve_full_lp(room, robot_height_pixels, use_strong_visibility, use_strong_distances, scaling_method, MIN_INTENSITY)
 
-# Step 4: Output a solution
-print('Total solution time:', time)
-print(room.guard_grid.shape)
-print(intensities.shape)
+    # Step 4: Output a solution
+    print('Total solution time:', time)
+    print(room.guard_grid.shape)
+    print(intensities.shape)
 
-# Create a csv of all positions and waiting time
-rows = []
-for (x, y), t in zip(room.guard_grid, waiting_times):
-    # We drop points that you stop less than a milisecond. HARDCODED
-    if t > 1e-3:
-        rows.append({'x': x, 'y': y, 'time': t})
-pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
+    # Create a csv of all positions and waiting time
+    rows = []
+    for (x, y), t in zip(room.guard_grid, waiting_times):
+        # We drop points that you stop less than a milisecond. HARDCODED
+        if t > 1e-3:
+            rows.append({'x': x, 'y': y, 'time': t})
+    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
 
-# Graphical visualizations of the solution
-print('Visualizing solution')
-visualize_times(room, waiting_times)
+    # Graphical visualizations of the solution
+    print('Visualizing solution')
+    visualize_times(room, waiting_times)
 
-# all the following code is new
-# READING THE CSV.
-# coords contains the (x,y) co-ordinates of the points in the room.
-# We need to go to each and every point in the coords list.
+    # all the following code is new
+    # READING THE CSV.
+    # coords contains the (x,y) co-ordinates of the points in the room.
+    # We need to go to each and every point in the coords list.
 
-coords_pdf = pd.read_csv(OUTPUT_CSV)
-coords = []
-for i, row in coords_pdf.iterrows():
-    x = row['x']
-    y = row['y']
-    coords.append((x, y))
+    coords_pdf = pd.read_csv(OUTPUT_CSV)
+    coords = []
+    for i, row in coords_pdf.iterrows():
+        x = row['x']
+        y = row['y']
+        coords.append((x, y))
 
-l = len(coords)
+    l = len(coords)
 
-tour = nearest_neighbor(0, coords, l)
-print(tour)
+    tour = nearest_neighbor(0, coords, l)
+    print(tour)
 
-for i in range(5):
-    tour = two_opt(tour, coords, l)
-    print(cost(tour, coords))
+    for i in range(5):
+        tour = two_opt(tour, coords, l)
+        print(cost(tour, coords))
 
-print(tour)
+    print(tour)
 
-dists, angles = distance_angles(tour, coords, l)
-angles += [0]
-#
-coords_pdf['orient'] = angles
-coords_pdf.to_csv(OUTPUT_CSV)
-#
+    dists, angles = distance_angles(tour, coords, l)
+    angles += [0]
+    #
+    coords_pdf['orient'] = angles
+    coords_pdf.to_csv(OUTPUT_CSV)
+    #
