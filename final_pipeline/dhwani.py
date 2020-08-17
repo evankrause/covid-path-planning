@@ -1,5 +1,6 @@
 import pandas as pd
 import math
+import numpy as np
 
 OUTPUT_CSV = '../output/tenbenham_waiting_times.csv'
 #
@@ -95,3 +96,97 @@ def distance_angles (tour, coords, l):
         angles.append(angle)
 
     return dists, angles
+
+# s1, s2 defines a line segment. We are going to translate/rotate all points so that s1 becomes the origin and
+# s2 is on the x axis. All the vertices of the room also undergo the same transformation. So, all relative positions are prserved.
+
+def rotate_room(s1, s2, room):
+    x1 = s1[0]
+    y1 = s1[1]
+
+    x2 = s2[0]
+    y2 = s2[1]
+
+    # translates s1 to the origin
+    trans = (-x1, -y1)
+    # at this point s2 will be (x2 - x1, y2 - y1)
+    #rot_angle = -1 * math.atan2((y2-y1), (x2-x1))
+    #c, s = np.cos(rot_angle), np.sin(rot_angle)
+
+    y_travel = y2 - y1 # to get the -ve angle.
+    x_travel = x2 - x1
+    hyp = math.sqrt(y_travel**2 + x_travel**2)
+
+    c, s = x_travel/hyp, y_travel/hyp
+
+    rot_mx = np.array(((c, -s), (s, c)))
+
+    rot_room = []
+
+    for i in range(len(room)):
+        point = room[i]
+        n_point = [None, None]
+        n_point[0] = point[0] + trans[0]
+        n_point[1] = point[1] + trans[1]
+
+        xx = n_point[0] * c + n_point[1] * s # could be done with np.array, matrix multiplication.
+        yy = -n_point[0] * s + n_point[1] * c
+        rot_room += [(xx, yy)]
+
+    x2 -= x1
+    y2 -= y1
+    xx = x2*c + y2*s
+    s2 = (xx, 0)
+
+    return rot_room, s2
+
+
+# finds possible walls that path from s1 to s2 can cross
+def hits_wall(s1, s2, room):
+    rot_room, new_s2 = rotate_room(s1, s2, room)
+    print (room, len(rot_room))
+
+    it_did = False
+    for i in range(len(rot_room)):
+        pt1 = rot_room[i]
+        idx = (i+1) % len(rot_room)
+        pt2 = rot_room[idx]
+
+        #print (pt1, pt2, new_s2)
+        if pt1[1] * pt2[1] >= 0:
+            it_did = it_did or False
+        elif pt1[1] == pt2[1]:
+            it_did = it_did or False
+        else:
+            x1 = pt1[0]
+            y1 = pt1[1]
+            x2 = pt2[0]
+            y2 = pt2[1]
+            x_cross = (y2*x1 - y1*x2)/(y2-y1)
+            it_did = it_did or ((0 <= x_cross) and (x_cross <= new_s2[0]))
+
+    return it_did
+
+def hits_1_wall(s1, s2, sm_room):
+    rot_room, new_s2 = rotate_room(s1, s2, sm_room)
+    #print ('hits_1_wall')
+    pt1 = rot_room[0]
+    pt2 = rot_room[1]
+    #print (sm_room, len(rot_room), pt1, pt2, new_s2)
+    #print ('hits_1_wall')
+    if pt1[1] * pt2[1] >= 0:
+        return False
+    elif pt1[1] == pt2[1]:
+        return False
+    else:
+        x1 = pt1[0]
+        y1 = pt1[1]
+        x2 = pt2[0]
+        y2 = pt2[1]
+        x_cross = (y2 * x1 - y1 * x2) / (y2 - y1)
+        #print (x_cross)
+        return (0 <= x_cross) and (x_cross <= new_s2[0])
+
+
+
+

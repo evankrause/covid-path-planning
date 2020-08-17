@@ -47,6 +47,25 @@ def visualize_times(room, waiting_times):
     ax.scatter(room.guard_grid[:,0], room.guard_grid[:,1], s = waiting_times, facecolors = 'r', edgecolors = 'r')
     plt.show()
 
+def visualize_our_path(room, waiting_times, pdf, path):
+    ax = plt.axes()
+    ax.axis('equal')
+    ax.plot(*room.room.exterior.xy)
+    #ax.plot(*room.guard.exterior.xy)
+
+    ax.scatter(room.guard_grid[:,0], room.guard_grid[:,1], s = waiting_times, facecolors = 'r', edgecolors = 'r')
+
+    xs = []
+    ys = []
+    for idx in path:
+        x = pdf.iloc[idx]['x']
+        y = pdf.iloc[idx]['y']
+        xs.append(x)
+        ys.append(y)
+
+    ax.plot(xs, ys, color='m')
+    plt.show()
+
 
 def get_intensities(room, robot_height_scaled, use_strong_visibility = True, use_strong_distances = True):
     # Construct initial intensities matrix, ignoring visibility
