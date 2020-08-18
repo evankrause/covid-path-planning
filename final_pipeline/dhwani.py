@@ -2,19 +2,14 @@ import pandas as pd
 import math
 import numpy as np
 
-OUTPUT_CSV = '../output/tenbenham_waiting_times.csv'
-#
-# print(coords)
-#
+
 # # Getting the minimum distance
 # min_dist, itinerary = tsp(coords)
 # print(min_dist)
 # print(itinerary)
 
-# itinerary = [0, 4, 3, 2, 7, 8, 9, 11, 12, 15, 22, 26, 25, 24, 27, 32, 33, 37, 40, 48, 44, 41, 36, 38, 42, 45, 46, 47, 43, 39, 35, 34, 31, 30, 29, 28, 23, 20, 21, 19, 18, 17, 16, 13, 14, 10, 6, 5, 1]
 
 # get_closest gets the closest point in the room, based on your current point.
-
 def get_closest(node, coords, visited, l):
     point = coords[node]
     min_dist = float('inf')
