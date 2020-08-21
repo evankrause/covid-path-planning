@@ -15,11 +15,11 @@ from dhwani import *
 # I/O Files
 INPUT_FILE = '../floor_plans/hrilab_sledbot_twolasers3.pgm'
 INPUT_YAML = '../floor_plans/hrilab_sledbot_twolasers3.yaml'
-OUTPUT_CSV = '../output/tenbenham_waiting_times.csv'
+OUTPUT_CSV = '../output/output_waiting_times.csv'
 
 # Robot dimensions
 ROBOT_HEIGHT = 1.2192   # in meters (currently set to 4 feet)
-ROBOT_BUFFER = 0.4      # "Radius" of the robot, in meters
+ROBOT_BUFFER = 0.45      # "Radius" of the robot, in meters
                         #   The center of the robot will stay at least ROBOT_BUFFER meters from walls
 ORTHOGONAL_TOL = 20     # Tolerance for orthogonal simplification, in pixels
 EPSILON = 0.4           # Size of grid for discretization. Units of meters.
@@ -107,7 +107,7 @@ else:
     angles += [0]
     
     coords_pdf['orient'] = angles
-    coords_pdf.to_csv(OUTPUT_CSV)
+    coords_pdf.to_csv(OUTPUT_CSV, index=False)
     
     visualize_our_path(room, waiting_times, coords_pdf, tour)
 
