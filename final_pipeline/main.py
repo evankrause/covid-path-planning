@@ -6,6 +6,7 @@ from polygon_extraction import extract_polygon, construct_isValidLocation_functi
 from lp_solver import solve_full_lp, visualize_times, solve_naive, visualize_our_path
 from shapely.geometry import box
 import matplotlib.pyplot as plt
+from shapely.ops import transform
 from dhwani import *
 
 ######################
@@ -15,26 +16,30 @@ from dhwani import *
 # I/O Files
 INPUT_FILE = '../floor_plans/hrilab_sledbot_twolasers3.pgm'
 INPUT_YAML = '../floor_plans/hrilab_sledbot_twolasers3.yaml'
-OUTPUT_CSV = '../output/output_waiting_times.csv'
+OUTPUT_CSV = '../output/waiting_times.csv'
 
-# Robot dimensions
-ROBOT_HEIGHT = 1.2192   # in meters (currently set to 4 feet)
-ROBOT_BUFFER = 0.45      # "Radius" of the robot, in meters
-                        #   The center of the robot will stay at least ROBOT_BUFFER meters from walls
-ORTHOGONAL_TOL = 20     # Tolerance for orthogonal simplification, in pixels
-EPSILON = 0.4           # Size of grid for discretization. Units of meters.
-                        #   A smaller epsilon guarantees that we find a
-                        #   solution closer to optimal, assuming infinite speed
-                        #   The right value should be determined experimentally
-MIN_INTENSITY = 1       # Threshold of energy each point in the room must
-                        #   receive, assuming that the UV light emits
-                        #   1/distance_in_pixels^2 units of energy
+# Robot parameters
+ROBOT_HEIGHT = 1.2192   # Height of UV light, in meters
+ROBOT_RADIUS = 0.4      # Distance from robot center to farthest point, in meters
+ROBOT_WATTAGE = 55      # Power of the UV light in Watts (ie. J/sec)
+
+# Global parameters
+DISINFECTION_THRESHOLD = 1206 # Joules/meter^2
 
 # Algorithm parameters. See documentation for the different variations
 naive_solution = False
 use_strong_visibility = True
 use_strong_distances = True
 scaling_method = 'none' # must be in {'epsilon', 'branch_and_bound', 'none'}
+ORTHOGONAL_TOL = 20     # Tolerance for orthogonal simplification, in pixels
+ROBOT_EPSILON = 0.4     # Size of grid for discretization of possible robot
+                        #   locations, in meters
+ROOM_EPSILON = 0.4      # Size of grid for discretization of locations to
+                        #   disinfect, in meters
+                        # Smaller epsilon values guarantee that we find a
+                        #   solution closer to optimal, assuming infinite speed
+                        #   The right value should be determined experimentally
+
 
 ############################
 ###   Compute Solution   ###
@@ -44,24 +49,19 @@ scaling_method = 'none' # must be in {'epsilon', 'branch_and_bound', 'none'}
 print('Extracting polygon')
 polygon, gray_img, xy_to_pixel, meters_per_pixel = extract_polygon(INPUT_FILE, INPUT_YAML, ortho_tolerance = ORTHOGONAL_TOL)
 
-is_valid_location = construct_isValidLocation_function(gray_img, xy_to_pixel, ROBOT_BUFFER, meters_per_pixel)
+is_valid_location = construct_isValidLocation_function(gray_img, xy_to_pixel, ROBOT_RADIUS, meters_per_pixel)
 
 # Step 2: a Room object contains not only the boundary, but creates a discretized list of places
 #         for the robot to guard (and list of places where the robot can actually move to)
 print('Creating room')
-room = Room(polygon, robot_buffer_meters = ROBOT_BUFFER, is_valid_guard = is_valid_location, room_eps = EPSILON, guard_eps = EPSILON)
-
-for guard_pt in room.guard_grid:
-    plt.scatter(*guard_pt, color = 'blue')
-plt.plot(*polygon.exterior.xy, color = 'red')
-plt.show()
+room = Room(polygon, gray_img, xy_to_pixel, robot_buffer_meters = ROBOT_RADIUS, is_valid_guard = is_valid_location, room_eps = ROOM_EPSILON, guard_eps = ROBOT_EPSILON)
 
 if naive_solution:
-    solve_naive(room, ROBOT_HEIGHT, MIN_INTENSITY)
+    solve_naive(room, ROBOT_HEIGHT, DISINFECTION_THRESHOLD)
 else:
     # Step 3: we generate the LP problem and solve it.
     print('Solving lp')
-    time, waiting_times, intensities = solve_full_lp(room, ROBOT_HEIGHT, use_strong_visibility, use_strong_distances, scaling_method, MIN_INTENSITY)
+    time, waiting_times, intensities = solve_full_lp(room, ROBOT_HEIGHT, ROBOT_RADIUS, ROBOT_WATTAGE, use_strong_visibility, use_strong_distances, scaling_method, DISINFECTION_THRESHOLD)
 
     # Step 4: Output a solution
     print('Total solution time:', time)
