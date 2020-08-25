@@ -59,23 +59,16 @@ def visualize_times(room, waiting_times):
     ax.scatter(guard_points_x, guard_points_y, s = waiting_times / 10, facecolors = 'none', edgecolors = 'r', alpha = 0.5)
     plt.show()
 
-def visualize_our_path(room, waiting_times, pdf, path):
+def visualize_path(room, locations):
     ax = plt.axes()
     ax.axis('equal')
-    ax.plot(*room.room.exterior.xy)
-    #ax.plot(*room.guard.exterior.xy)
+    ax.imshow(room.room_img)
+    ax.plot(*transform(room.xy_to_pixel, room.room).exterior.xy)
 
-    ax.scatter(room.guard_grid[:,0], room.guard_grid[:,1], s = waiting_times, facecolors = 'r', edgecolors = 'r')
+    points_x = [room.xy_to_pixel(locations[i][0], locations[i][1])[0] for i in range(len(locations))]
+    points_y = [room.xy_to_pixel(locations[i][0], locations[i][1])[1] for i in range(len(locations))]
 
-    xs = []
-    ys = []
-    for idx in path:
-        x = pdf.iloc[idx]['x']
-        y = pdf.iloc[idx]['y']
-        xs.append(x)
-        ys.append(y)
-
-    ax.plot(xs, ys, color='m')
+    ax.plot(points_x, points_y, color='m')
     plt.show()
 
 
